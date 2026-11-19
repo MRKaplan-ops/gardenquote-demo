@@ -9,7 +9,7 @@ export function EstimatePdf({c,items,desc,images,notes,t,lang,mult,tierName}:{la
   <Text style={{marginTop:14,fontSize:12}}>{t('desc')}</Text><Text>{desc||'-'}</Text>
   {images.length>0&&<View style={{flexDirection:'row',marginTop:8}}>{images.slice(0,3).map((u,i)=><Image key={i} src={u} style={s.img}/>)}</View>}
   <Text style={{marginTop:14,fontSize:12}}>{t('cats')}</Text>
-  {e.lines.map(l=><View key={l.activity.id} style={s.r}><Text>{actName(l.activity,lang)} ({l.qtyMin===l.qtyMax?l.qtyMin:`${l.qtyMin}–${l.qtyMax}`} {unitLabel(l.activity.unit,lang)} × {m(l.activity.price)})</Text><Text>{m(l.subMin)} – {m(l.subMax)}</Text></View>)}
+  {e.lines.map(l=><View key={l.activity.id} style={s.r}><Text>{actName(l.activity,lang,l.variant)} ({l.qtyMin===l.qtyMax?l.qtyMin:`${l.qtyMin}–${l.qtyMax}`} {unitLabel(l.activity.unit,lang)} × {m(l.activity.price)})</Text><Text>{m(l.subMin)} – {m(l.subMax)}</Text></View>)}
   <View style={s.r}><Text>{t('callout')}</Text><Text>{m(e.callout)}</Text></View><View style={s.r}><Text>{t('vat')} ({c.vat}%)</Text><Text>{m(e.vatMin)} – {m(e.vatMax)}</Text></View>
   <View style={[s.r,{fontSize:13}]}><Text>{t('total')}</Text><Text>{m0(e.roundedMin)} – {m0(e.roundedMax)}</Text></View>
   <Text style={{marginTop:14,fontSize:12}}>{t('assumptions')}</Text>{notes.map((n,i)=><Text key={i}>• {n}</Text>)}

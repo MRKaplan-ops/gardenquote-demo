@@ -25,3 +25,6 @@ Price table has Dutch/English names per activity (`names` in `config/demo.ts`). 
 
 ## v3 notes
 Company settings persist in `sessionStorage` after "Instellingen opslaan" (visitor input is never persisted). Tiers: 0.85x / 1.0x / 1.3x on material activities, ±7% margins (dashboard), rounded to €50. The advice modal opens the visitor's own email app (mailto), so nothing is stored or sent by us. The before/after visualisation is demo-only (user photo vs sample illustration); real image generation is not implemented yet.
+
+## v4 notes
+Estimate quantities are read-only for visitors. Step 2 leads with the style make-over option (description optional when inspiration photos are uploaded). The visualisation opens on a default style. Demo analyzer: specific words in the description override broad project types; "keramische" shows the variant name "Keramische bestrating / terras aanleggen".

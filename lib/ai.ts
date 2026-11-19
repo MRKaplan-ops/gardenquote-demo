@@ -1,22 +1,25 @@
 // AI only interprets the project. It NEVER supplies prices; quantities map to the company's activity ids.
 export type Input={types:string[];areas:Record<string,number>;desc:string;area:number|null;remove:boolean;access:string;materials:string;time:string;activities:{id:string;name:string;unit:string}[]}
-export type Analysis={mode:'demo'|'ai';items:{activityId:string;qtyMin:number;qtyMax:number;source:'customer'|'assumed'}[];assumptions:string[];missing:string[];questions:string[];confidence:'low'|'medium'|'high'}
+export type Analysis={mode:'demo'|'ai';items:{activityId:string;qtyMin:number;qtyMax:number;source:'customer'|'assumed';variant?:string}[];assumptions:string[];missing:string[];questions:string[];confidence:'low'|'medium'|'high'}
 export const PRIMARY=['paving','artificial','lawn','planting','canopy']
-export const TYPE_CATS:Record<string,string[]>={garden:['lawn','planting'],paving:['paving'],lawn:['lawn'],artificial:['artificial'],fence:['fence'],planting:['planting'],renovation:['planting','clearance'],canopy:['canopy'],other:[]}
+export const TYPE_CATS:Record<string,string[]>={garden:['lawn','planting'],makeover:['paving','lawn','planting'],pruning:['clearance'],paving:['paving'],lawn:['lawn'],artificial:['artificial'],fence:['fence'],planting:['planting'],renovation:['planting','clearance'],canopy:['canopy'],other:[]}
 const KW:[RegExp,string][]=[[/keramisch|tegel|bestrating|klinker|terras|tile|paving|patio|terrace/i,'paving'],[/gazon|graszod|\bgras\b|lawn|turf|sod/i,'lawn'],[/schutting|hekwerk|afrastering|fence/i,'fence'],[/overkapping|veranda|pergola|canopy/i,'canopy'],[/border|beplant|planten|hagen|hedge/i,'planting'],[/leeghalen|snoei|opruim|rooien|clearance|pruning/i,'clearance'],[/slopen|sloop|afbreken|weghalen|verwijder|demolish|remove/i,'remove']]
 const OLD='(oude|bestaande|existing|old)\\s+(bestrating|tegels?|klinkers|paving|tiles)',ART=/kunstgras|artificial (grass|turf)/i
 const NEG=/laten staan|laat staan|blijft|blijven|behouden|behoud|niet vervangen|\b(geen|no|not|keep)\b/i
+const BROAD=['garden','renovation','makeover'] // broad types only supply defaults when the text names nothing specific
 export function detect(types:string[],desc:string,remove:boolean){
  const clean=desc.split(/[.;!?\n,]+|\s+(?:en|maar|and|but)\s+/i).filter(x=>!NEG.test(x)).join('. ')
  let rem=remove||new RegExp(OLD,'i').test(clean)
- const d=clean.replace(new RegExp(OLD,'gi'),' ');const cats=new Set<string>(types.flatMap(x=>TYPE_CATS[x]??[]))
- if(ART.test(d))cats.add('artificial')
+ const d=clean.replace(new RegExp(OLD,'gi'),' '),kw=new Set<string>()
+ if(ART.test(d))kw.add('artificial')
  const d2=d.replace(new RegExp(ART.source,'gi'),' ')
- for(const [re,id] of KW)if(re.test(d2)){if(id==='remove')rem=true;else cats.add(id)}
- return {cats,rem}}
+ for(const [re,id] of KW)if(re.test(d2)){if(id==='remove')rem=true;else kw.add(id)}
+ const cats=new Set<string>([...types.filter(x=>!BROAD.includes(x)).flatMap(x=>TYPE_CATS[x]??[]),...kw])
+ if(![...cats].some(x=>PRIMARY.includes(x)))types.filter(x=>BROAD.includes(x)).flatMap(x=>TYPE_CATS[x]??[]).forEach(x=>cats.add(x))
+ return {cats,rem,ceramic:/keramisch|ceramic|porcelain/i.test(d2)}}
 type Q={lo:number;hi:number;src:'customer'|'assumed'}
 export function demo(i:Input):Analysis{
- const {cats,rem}=detect(i.types,i.desc,i.remove),q:Record<string,Q>={},given=i.areas||{},total=i.area&&i.area>0?i.area:0
+ const {cats,rem,ceramic}=detect(i.types,i.desc,i.remove),q:Record<string,Q>={},given=i.areas||{},total=i.area&&i.area>0?i.area:0
  let defaulted=false,split=false
  const P=PRIMARY.filter(x=>cats.has(x)),rest=P.filter(x=>!(given[x]>0))
  const left=Math.max(0,total-P.filter(x=>given[x]>0).reduce((n,x)=>n+given[x],0))
@@ -32,7 +35,7 @@ export function demo(i:Input):Analysis{
  if(['artificial','lawn','planting'].some(x=>cats.has(x)))q.soil=sum(['artificial','lawn','planting'])!
  if(cats.has('clearance')){const b=Math.max(2,Math.ceil((total||sum(P)?.hi||20)/10));q.clearance={lo:b,hi:Math.ceil(b*1.5),src:'assumed'}}
  if(!Object.keys(q).length)q.clearance=dflt(6)
- const items=['clearance','remove','soil','paving','artificial','lawn','planting','canopy','fence'].filter(id=>q[id]&&i.activities.some(a=>a.id===id)).map(id=>({activityId:id,qtyMin:q[id].lo,qtyMax:q[id].hi,source:q[id].src}))
+ const items=['clearance','remove','soil','paving','artificial','lawn','planting','canopy','fence'].filter(id=>q[id]&&i.activities.some(a=>a.id===id)).map(id=>({activityId:id,qtyMin:q[id].lo,qtyMax:q[id].hi,source:q[id].src,variant:id==='paving'&&ceramic?'ceramic':undefined}))
  return {mode:'demo',items,assumptions:[...(defaulted?['a_area']:[]),...(split?['a_split']:[]),...(i.access==='hard'?['a_access']:[]),'a_excl'],missing:defaulted?['m_dims']:[],questions:['q_hidden','q_soil'],confidence:defaulted?'low':'medium'}}
 export async function analyze(i:Input,images:Buffer[]):Promise<Analysis>{
  const key=process.env.ANTHROPIC_API_KEY;if(!key)return demo(i)
