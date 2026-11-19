@@ -1,0 +1,1 @@
+export default {content:['./app/**/*.tsx','./components/**/*.tsx'],theme:{extend:{colors:{ink:'#1c2b22',leaf:'#2f6b4a',chalk:'#f6f7f3',straw:'#c9a64b',stone:'#e3e6dd'},fontFamily:{display:['Georgia','"Times New Roman"','serif'],sans:['system-ui','sans-serif']}}},plugins:[]}

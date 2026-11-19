@@ -1,0 +1,17 @@
+'use client'
+import {createContext,useContext,useState,type ReactNode} from 'react'
+import {DICT,LANGS,type Lang,type Key} from '@/lib/i18n'
+import {DEMO_COMPANY,PRODUCT_NAME} from '@/config/demo'
+import type {Company} from '@/lib/pricing/engine'
+type Ctx={lang:Lang;setLang:(l:Lang)=>void;t:(k:string)=>string;c:Company;setC:(c:Company)=>void}
+const X=createContext<Ctx>(null!)
+export const useApp=()=>useContext(X)
+export function Providers({children}:{children:ReactNode}){
+ const [lang,setLang]=useState<Lang>('nl'),[c,setC]=useState<Company>(DEMO_COMPANY) // memory only: no cookies, no localStorage
+ const t=(k:string)=>(DICT[lang] as Record<string,string>)[k]??k
+ return <X.Provider value={{lang,setLang,t,c,setC}}>
+  <header className="border-b border-stone bg-white"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+   <a href="/" className="font-display text-xl font-bold text-leaf">{PRODUCT_NAME}</a>
+   <nav className="flex items-center gap-4 text-sm"><a href="/quote" className="hover:underline">Widget</a><a href="/dashboard" className="hover:underline">{t('dashboard')}</a>
+    <select aria-label="Language" className="rounded border border-stone bg-white p-1" value={lang} onChange={e=>setLang(e.target.value as Lang)}>{LANGS.map(l=><option key={l.id} value={l.id}>{l.label}</option>)}</select></nav></div></header>
+  <main className="mx-auto max-w-5xl px-4 py-8">{children}</main></X.Provider>}

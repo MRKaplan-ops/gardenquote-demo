@@ -1,0 +1,4 @@
+import type {Company} from '@/lib/pricing/engine'
+export const PRODUCT_NAME='GardenQuote AI' // change brand name here
+export const DEMO_COMPANY:Company={name:'Groenwerk Demo Tuinen',color:'#2f6b4a',email:'info@groenwerk.example',phone:'+31 20 000 0000',currency:'EUR',locale:'nl-NL',vat:21,minProject:750,callout:45,marginLow:10,marginHigh:20,
+activities:[{id:'paving',name:'Garden paving installation',unit:'m²',price:85},{id:'remove',name:'Remove existing paving',unit:'m²',price:18},{id:'lawn',name:'Lawn installation',unit:'m²',price:12},{id:'artificial',name:'Artificial grass installation',unit:'m²',price:45},{id:'fence',name:'Fence installation',unit:'m',price:75},{id:'planting',name:'Planting',unit:'m²',price:35},{id:'soil',name:'Soil preparation',unit:'m²',price:15},{id:'clearance',name:'Garden clearance',unit:'h',price:55}]} // demo values, not market advice
