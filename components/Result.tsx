@@ -1,0 +1,44 @@
+'use client'
+import {useState} from 'react'
+import {useApp} from './Providers'
+import {Estimate} from './Estimate'
+import {estimate,TIERS,type Item} from '@/lib/pricing/engine'
+import {money,actName,unitLabel} from '@/lib/i18n'
+import {gardenSvg} from '@/lib/visual'
+const STYLES=['modern','kids','green','luxe','low']
+export function Result({items,setItems,tier,setTier,before,onPdf,pdfBusy}:{items:Item[];setItems:(i:Item[])=>void;tier:number;setTier:(n:number)=>void;before:string;onPdf:()=>void;pdfBusy:boolean}){
+ const {c,t,lang}=useApp(),m0=(n:number)=>money(n,c.currency,c.locale,0)
+ const [used,setUsed]=useState<string[]>([]),[style,setStyle]=useState(''),[pos,setPos]=useState(50),[modal,setModal]=useState(false),[f,setF]=useState({name:'',contact:'',when:''})
+ const e=estimate(c,items,TIERS[tier].m),range=`${m0(e.roundedMin)} – ${m0(e.roundedMax)}`,left=5-used.length
+ const pick=(s:string)=>{if(!used.includes(s)){if(left<=0)return;setUsed([...used,s])}setStyle(s);setPos(50)}
+ const msg=t('wa_msg').replace('{s}',style?t('st_'+style):'-').replace('{p}',t('tier_'+TIERS[tier].id)).replace('{r}',range)
+ const num=(c.whatsapp||'').replace(/\D/g,'').replace(/^0/,'31'),mid=items.some(i=>['lawn','planting'].includes(i.activityId))
+ const body=[msg,'',...e.lines.map(l=>`${actName(l.activity,lang)}: ${l.qtyMin}–${l.qtyMax} ${unitLabel(l.activity.unit,lang)}`),'',f.name,f.contact,f.when].join('\n')
+ return <div className="space-y-8">
+  <section><h2 className="font-display text-xl font-bold">{t('tier_h')}</h2>
+   <div className="mt-3 grid gap-3 sm:grid-cols-3">{TIERS.map((x,i)=>{const r=estimate(c,items,x.m);return <button key={x.id} aria-pressed={tier===i} onClick={()=>setTier(i)} className="relative rounded border border-stone bg-white p-4 text-left" style={tier===i?{borderColor:c.color,boxShadow:`0 0 0 2px ${c.color}`}:undefined}>
+    {i===1&&<span className="absolute -top-2 right-2 rounded-full px-2 py-0.5 text-xs text-white" style={{background:c.color}}>{t('popular')}</span>}
+    <b>{t('tier_'+x.id)}</b><p className="text-sm">{t('tier_'+x.id+'_d')}</p><p className="mt-2 font-display text-lg">{m0(r.roundedMin)} – {m0(r.roundedMax)}</p></button>})}</div>
+   <p className="mt-3 inline-block rounded-full border border-stone bg-white px-3 py-1 text-sm">{t(mid?'maint_mid':'maint_low')}</p>
+   <div className="mt-3"><Estimate items={items} onItems={setItems} mult={TIERS[tier].m}/></div></section>
+  <section><h2 className="font-display text-xl font-bold">{t('viz_h')}</h2><p className="mt-1 text-sm">{t('viz_left').replace('{n}',String(left))}</p>
+   <div className="mt-2 flex flex-wrap gap-2">{STYLES.map(s=><button key={s} className={style===s?'btn':'btn2'} onClick={()=>pick(s)}>{t('st_'+s)}</button>)}</div>
+   {style?<div className="mt-3"><div className="relative aspect-[5/3] overflow-hidden rounded border border-stone bg-white">
+    <img src={gardenSvg(style)} alt={t('viz_after')} className="absolute inset-0 h-full w-full object-cover"/>
+    <img src={before||gardenSvg('before')} alt={t('viz_before')} className="absolute inset-0 h-full w-full object-cover" style={{clipPath:`inset(0 ${100-pos}% 0 0)`}}/>
+    <div className="absolute inset-y-0 w-0.5 bg-white" style={{left:`${pos}%`}}/><span className="absolute left-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_before')}</span><span className="absolute right-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_after')}</span></div>
+    <input type="range" min="0" max="100" value={pos} onChange={ev=>setPos(Number(ev.target.value))} aria-label={t('viz_before')+' / '+t('viz_after')} className="mt-2 w-full"/>
+    <p className="text-xs">{t('viz_demo')}</p></div>:<p className="mt-3 text-sm">{t('viz_pick')}</p>}</section>
+  <section className="rounded-lg border border-stone bg-white p-5"><p className="inline-block rounded-full px-3 py-1 text-sm text-white" style={{background:c.color}}>{t('avail').replace('{t}',c.leadTime||'')}</p>
+   <h2 className="mt-4 font-display text-xl font-bold">{t('next_h')}</h2><ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">{['n1','n2','n3'].map(k=><li key={k}>{t(k)}</li>)}</ol>
+   <div className="mt-4 flex flex-wrap gap-3"><button className="btn" onClick={()=>setModal(true)}>{t('advice')}</button>
+    <a className="btn2 inline-block" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${num}?text=${encodeURIComponent(msg)}`}>{t('wa_send')}</a>
+    <a className="btn2 inline-block" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${encodeURIComponent(msg)}`}>{t('share')}</a>
+    <button className="btn2" onClick={onPdf} disabled={pdfBusy}>{pdfBusy?'…':t('download')}</button></div></section>
+  {modal&&<div role="dialog" aria-modal="true" className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-md space-y-3 rounded-lg bg-white p-5">
+   <h2 className="font-display text-xl font-bold">{t('modal_h')}</h2>
+   <label className="block text-sm">{t('m_name')}<input className="inp mt-1" maxLength={80} value={f.name} onChange={ev=>setF({...f,name:ev.target.value})}/></label>
+   <label className="block text-sm">{t('m_contact')}<input className="inp mt-1" maxLength={80} value={f.contact} onChange={ev=>setF({...f,contact:ev.target.value})}/></label>
+   <label className="block text-sm">{t('m_when')}<input className="inp mt-1" maxLength={80} value={f.when} onChange={ev=>setF({...f,when:ev.target.value})}/></label>
+   <p className="text-xs">{t('m_note').replace('{c}',c.name)}</p>
+   <div className="flex gap-3"><a className="btn inline-block" href={`mailto:${c.email}?subject=${encodeURIComponent(c.name+' – '+t('modal_h'))}&body=${encodeURIComponent(body)}`}>{t('m_send')}</a><button className="btn2" onClick={()=>{setModal(false);setF({name:'',contact:'',when:''})}}>{t('close')}</button></div></div></div>}</div>}

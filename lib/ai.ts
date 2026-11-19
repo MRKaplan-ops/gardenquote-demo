@@ -5,9 +5,11 @@ export const PRIMARY=['paving','artificial','lawn','planting','canopy']
 export const TYPE_CATS:Record<string,string[]>={garden:['lawn','planting'],paving:['paving'],lawn:['lawn'],artificial:['artificial'],fence:['fence'],planting:['planting'],renovation:['planting','clearance'],canopy:['canopy'],other:[]}
 const KW:[RegExp,string][]=[[/keramisch|tegel|bestrating|klinker|terras|tile|paving|patio|terrace/i,'paving'],[/gazon|graszod|\bgras\b|lawn|turf|sod/i,'lawn'],[/schutting|hekwerk|afrastering|fence/i,'fence'],[/overkapping|veranda|pergola|canopy/i,'canopy'],[/border|beplant|planten|hagen|hedge/i,'planting'],[/leeghalen|snoei|opruim|rooien|clearance|pruning/i,'clearance'],[/slopen|sloop|afbreken|weghalen|verwijder|demolish|remove/i,'remove']]
 const OLD='(oude|bestaande|existing|old)\\s+(bestrating|tegels?|klinkers|paving|tiles)',ART=/kunstgras|artificial (grass|turf)/i
+const NEG=/laten staan|laat staan|blijft|blijven|behouden|behoud|niet vervangen|\b(geen|no|not|keep)\b/i
 export function detect(types:string[],desc:string,remove:boolean){
- let rem=remove||new RegExp(OLD,'i').test(desc)
- const d=desc.replace(new RegExp(OLD,'gi'),' ');const cats=new Set<string>(types.flatMap(x=>TYPE_CATS[x]??[]))
+ const clean=desc.split(/[.;!?\n,]+|\s+(?:en|maar|and|but)\s+/i).filter(x=>!NEG.test(x)).join('. ')
+ let rem=remove||new RegExp(OLD,'i').test(clean)
+ const d=clean.replace(new RegExp(OLD,'gi'),' ');const cats=new Set<string>(types.flatMap(x=>TYPE_CATS[x]??[]))
  if(ART.test(d))cats.add('artificial')
  const d2=d.replace(new RegExp(ART.source,'gi'),' ')
  for(const [re,id] of KW)if(re.test(d2)){if(id==='remove')rem=true;else cats.add(id)}
@@ -19,9 +21,10 @@ export function demo(i:Input):Analysis{
  const P=PRIMARY.filter(x=>cats.has(x)),rest=P.filter(x=>!(given[x]>0))
  const left=Math.max(0,total-P.filter(x=>given[x]>0).reduce((n,x)=>n+given[x],0))
  const dflt=(v:number):Q=>{defaulted=true;return {lo:Math.round(v*.6),hi:Math.round(v*1.4),src:'assumed'}}
+ const W=(x:string)=>x==='planting'?10:x==='canopy'?20:45,sw=rest.reduce((n,x)=>n+W(x),0)||1
  for(const x of P){
   if(given[x]>0)q[x]={lo:given[x],hi:given[x],src:'customer'}
-  else if(total>0&&left>0){const v=Math.round(left/rest.length);if(rest.length>1)split=true;q[x]=rest.length>1?{lo:Math.round(v*.9),hi:Math.round(v*1.1),src:'assumed'}:{lo:v,hi:v,src:'customer'}}
+  else if(total>0&&left>0){const v=Math.round(left*W(x)/sw),one=rest.length===1;if(!one)split=true;q[x]=one?{lo:v,hi:v,src:'customer'}:{lo:Math.round(v*.93),hi:Math.round(v*1.07),src:'assumed'}}
   else q[x]=dflt(25)}
  if(cats.has('fence'))q.fence=given.fence>0?{lo:given.fence,hi:given.fence,src:'customer'}:dflt(10)
  const sum=(ids:string[]):Q|null=>{const h=ids.filter(x=>q[x]);return h.length?{lo:h.reduce((n,x)=>n+q[x].lo,0),hi:h.reduce((n,x)=>n+q[x].hi,0),src:h.every(x=>q[x].src==='customer')?'customer':'assumed'}:null}

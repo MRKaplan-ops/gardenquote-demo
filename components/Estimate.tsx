@@ -2,8 +2,8 @@
 import {useApp} from './Providers'
 import {estimate,type Item} from '@/lib/pricing/engine'
 import {money,num,actName,unitLabel} from '@/lib/i18n'
-export function Estimate({items,onItems}:{items:Item[];onItems?:(i:Item[])=>void}){
- const {c,t,lang}=useApp(),e=estimate(c,items),m=(n:number)=>money(n,c.currency,c.locale),m0=(n:number)=>money(n,c.currency,c.locale,0)
+export function Estimate({items,onItems,mult=1}:{items:Item[];onItems?:(i:Item[])=>void;mult?:number}){
+ const {c,t,lang}=useApp(),e=estimate(c,items,mult),m=(n:number)=>money(n,c.currency,c.locale),m0=(n:number)=>money(n,c.currency,c.locale,0)
  const rng=(a:number,b:number,f=m)=>a===b?f(a):`${f(a)} – ${f(b)}`
  const set=(id:string,p:Partial<Item>)=>onItems?.(items.map(x=>{if(x.activityId!==id)return x;const n={...x,...p};if(p.qtyMin!==undefined&&n.qtyMax<n.qtyMin)n.qtyMax=n.qtyMin;if(p.qtyMax!==undefined&&n.qtyMin>n.qtyMax)n.qtyMin=n.qtyMax;return n}))
  const inp=(id:string,k:'qtyMin'|'qtyMax',v:number)=><input aria-label={t('qty')} type="number" min="0" step="any" className="inp !w-20 !px-2 !py-1" value={v} onChange={ev=>{const n=Math.max(0,Number(ev.target.value)||0);set(id,k==='qtyMin'?{qtyMin:n}:{qtyMax:n})}}/>

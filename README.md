@@ -22,3 +22,6 @@ Run `npm install`, `npm run build`, fix any type errors (code was written withou
 
 ## v2 notes
 Price table has Dutch/English names per activity (`names` in `config/demo.ts`). Demo analyzer reads keywords (NL/EN) and splits the total area over the selected work. Totals are rounded to the nearest €50 (`roundTo`, 0 = off). Quantities are editable on the estimate screen.
+
+## v3 notes
+Company settings persist in `sessionStorage` after "Instellingen opslaan" (visitor input is never persisted). Tiers: 0.85x / 1.0x / 1.3x on material activities, ±7% margins (dashboard), rounded to €50. The advice modal opens the visitor's own email app (mailto), so nothing is stored or sent by us. The before/after visualisation is demo-only (user photo vs sample illustration); real image generation is not implemented yet.
