@@ -12,12 +12,12 @@ export async function POST(req:NextRequest){
   const f=await req.formData();const p=JSON.parse(String(f.get('payload')||'{}'))
   const acts=Array.isArray(p.activities)?p.activities.slice(0,50).filter((a:any)=>typeof a?.id==='string'&&typeof a?.name==='string').map((a:any)=>({id:a.id.slice(0,40),name:a.name.slice(0,80),unit:String(a.unit||'').slice(0,10)})):[]
   const area=p.area===null||p.area===undefined?null:Number(p.area)
-  if(typeof p.type!=='string'||(area!==null&&!(area>=0&&area<=100000))||!acts.length)return bad('invalid')
+  if((area!==null&&!(area>=0&&area<=100000))||!acts.length)return bad('invalid')
   const files=f.getAll('images').filter((x):x is File=>typeof x!=='string');if(files.length>5)return bad('too many images')
   const bufs:Buffer[]=[]
   for(const file of files){if(!OK.includes(file.type)||file.size>MAX)return bad('invalid image')
    bufs.push(await sharp(Buffer.from(await file.arrayBuffer())).rotate().resize(1400,1400,{fit:'inside'}).jpeg({quality:82}).toBuffer())} // re-encode drops EXIF; memory only, nothing written to disk
-  const input:Input={type:p.type.slice(0,20),desc:String(p.desc||'').slice(0,2000),area,remove:!!p.remove,access:p.access==='hard'?'hard':'easy',materials:String(p.materials||'').slice(0,200),time:String(p.time||'').slice(0,20),activities:acts}
+  const input:Input={types,areas,desc:String(p.desc||'').slice(0,2000),area,remove:!!p.remove,access:p.access==='hard'?'hard':'easy',materials:String(p.materials||'').slice(0,200),time:String(p.time||'').slice(0,20),activities:acts}
   return NextResponse.json(await analyze(input,bufs))
  }catch{return bad('invalid request')}
 }

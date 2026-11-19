@@ -19,3 +19,6 @@ Photos and descriptions go to the AI provider when a key is set; hosting (e.g. V
 
 ## Before Vercel
 Run `npm install`, `npm run build`, fix any type errors (code was written without a build environment); add real per-company config storage, embeddable widget (iframe/script), auth for the dashboard, and a hosted rate limiter.
+
+## v2 notes
+Price table has Dutch/English names per activity (`names` in `config/demo.ts`). Demo analyzer reads keywords (NL/EN) and splits the total area over the selected work. Totals are rounded to the nearest €50 (`roundTo`, 0 = off). Quantities are editable on the estimate screen.

@@ -9,3 +9,6 @@ describe('estimate',()=>{
  it('ignores unknown activities and handles empty input',()=>{expect(estimate(base,[{activityId:'x',qtyMin:1,qtyMax:2}]).totalMax).toBe(0)})
  it('no VAT when 0%',()=>{expect(estimate({...base,vat:0},items).totalMin).toBe(3540)})
 })
+describe('rounding',()=>{
+ it('rounds totals to nearest 50 by default',()=>{expect(estimate(base,items).roundedMax).toBe(4300)})
+ it('respects roundTo',()=>{expect(estimate({...base,roundTo:100},items).roundedMax).toBe(4300);expect(estimate({...base,roundTo:0},items).roundedMax).toBe(4283.4)})})
