@@ -1,6 +1,6 @@
 // AI only interprets the project. It NEVER supplies prices; quantities map to the company's activity ids.
 export type Input={types:string[];areas:Record<string,number>;desc:string;area:number|null;remove:boolean;access:string;materials:string;time:string;activities:{id:string;name:string;unit:string}[]}
-export type Analysis={mode:'demo'|'ai';items:{activityId:string;qtyMin:number;qtyMax:number;source:'customer'|'assumed';variant?:string}[];assumptions:string[];missing:string[];questions:string[];confidence:'low'|'medium'|'high'}
+export type Analysis={mode:'demo'|'ai';summary?:string;items:{activityId:string;qtyMin:number;qtyMax:number;source:'customer'|'assumed';variant?:string}[];assumptions:string[];missing:string[];questions:string[];confidence:'low'|'medium'|'high'}
 export const PRIMARY=['paving','artificial','lawn','planting','canopy']
 export const TYPE_CATS:Record<string,string[]>={garden:['lawn','planting'],makeover:['paving','lawn','planting'],pruning:['clearance'],paving:['paving'],lawn:['lawn'],artificial:['artificial'],fence:['fence'],planting:['planting'],renovation:['planting','clearance'],canopy:['canopy'],other:[]}
 const KW:[RegExp,string][]=[[/keramisch|tegel|bestrating|klinker|terras|tile|paving|patio|terrace/i,'paving'],[/gazon|graszod|\bgras\b|lawn|turf|sod/i,'lawn'],[/schutting|hekwerk|afrastering|fence/i,'fence'],[/overkapping|veranda|pergola|canopy/i,'canopy'],[/border|beplant|planten|hagen|hedge/i,'planting'],[/leeghalen|snoei|opruim|rooien|clearance|pruning/i,'clearance'],[/slopen|sloop|afbreken|weghalen|verwijder|demolish|remove/i,'remove']]
@@ -36,16 +36,28 @@ export function demo(i:Input):Analysis{
  if(cats.has('clearance')){const b=Math.max(2,Math.ceil((total||sum(P)?.hi||20)/10));q.clearance={lo:b,hi:Math.ceil(b*1.5),src:'assumed'}}
  if(!Object.keys(q).length)q.clearance=dflt(6)
  const items=['clearance','remove','soil','paving','artificial','lawn','planting','canopy','fence'].filter(id=>q[id]&&i.activities.some(a=>a.id===id)).map(id=>({activityId:id,qtyMin:q[id].lo,qtyMax:q[id].hi,source:q[id].src,variant:id==='paving'&&ceramic?'ceramic':undefined}))
- return {mode:'demo',items,assumptions:[...(defaulted?['a_area']:[]),...(split?['a_split']:[]),...(i.access==='hard'?['a_access']:[]),'a_excl'],missing:defaulted?['m_dims']:[],questions:['q_hidden','q_soil'],confidence:defaulted?'low':'medium'}}
-export async function analyze(i:Input,images:Buffer[]):Promise<Analysis>{
- const key=process.env.ANTHROPIC_API_KEY;if(!key)return demo(i)
+ return {mode:'demo',items,assumptions:[...(defaulted?['a_area']:[]),...(split?['a_split']:[]),...(i.access==='hard'?['a_access']:[]),...(rem?['a_remove']:[]),'a_excl'],missing:defaulted?['m_dims']:[],questions:['q_hidden','q_soil'],confidence:defaulted?'low':'medium'}}
+const PROMPT=(i:Input,insp:boolean)=>`Je bent een ervaren Nederlandse tuinontwerper en calculator. Je krijgt foto's van de HUIDIGE tuin${insp?' en daarna INSPIRATIEFOTO\'S (alleen stijlwensen, niet meten)':''}. Schat realistische afmetingen met referentie-objecten (tegel 30x30 of 60x60 cm, deur 2,1 m, schutting 1,8 m, fiets 1,8 m). Geef per werkzaamheid een krappe bandbreedte van maximaal ±10% rond je beste schatting; gok nooit wild (geen 30–70 m²). Klantmaten zijn de waarheid. Antwoord ALLEEN met JSON: {"summary":"precies 2 vriendelijke Nederlandse zinnen over wat je in de tuin ziet","items":[{"activityId":string,"qtyMin":number,"qtyMax":number}],"assumptions":string[],"missing":string[],"questions":string[],"confidence":"low|medium|high"}. Gebruik ALLEEN deze activityIds: ${JSON.stringify(i.activities)} (m² oppervlakte, m strekkende meter, h uren). Geef NOOIT prijzen. Klant: doelen ${i.types.join(',')}; totale oppervlakte ${i.area??'onbekend'}; deelmaten ${JSON.stringify(i.areas)}; oud materiaal verwijderen: ${i.remove}; omschrijving: ${i.desc.slice(0,1500)}. Neem niets op wat "laten staan" of "behouden" moet worden.`
+const b64=(b:Buffer)=>b.toString('base64')
+async function ask(prompt:string,imgs:Buffer[],insp:Buffer[]):Promise<string>{
+ const ak=process.env.ANTHROPIC_API_KEY,ok=process.env.OPENAI_API_KEY
+ if(ak){const im=(b:Buffer)=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64(b)}})
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':ak,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.ANTHROPIC_MODEL||'claude-sonnet-5-5',max_tokens:1200,messages:[{role:'user',content:[{type:'text',text:'Huidige tuin:'},...imgs.map(im),...(insp.length?[{type:'text',text:'Inspiratie:'},...insp.map(im)]:[]),{type:'text',text:prompt}]}]})})
+  if(!r.ok)throw new Error('anthropic '+r.status);return String((await r.json()).content?.[0]?.text)}
+ if(ok){const im=(b:Buffer)=>({type:'image_url',image_url:{url:'data:image/jpeg;base64,'+b64(b)}})
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+ok,'content-type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_VISION_MODEL||'gpt-4o',max_tokens:1200,response_format:{type:'json_object'},messages:[{role:'user',content:[{type:'text',text:prompt},...imgs.map(im),...insp.map(im)]}]})})
+  if(!r.ok)throw new Error('openai '+r.status);return String((await r.json()).choices?.[0]?.message?.content)}
+ throw new Error('no key')}
+export async function analyze(i:Input,images:Buffer[],insp:Buffer[]=[]):Promise<Analysis>{
+ if(!process.env.ANTHROPIC_API_KEY&&!process.env.OPENAI_API_KEY)return demo(i)
  try{
-  const prompt=`You assist a landscaping estimate. Return ONLY JSON: {"items":[{"activityId":string,"qtyMin":number,"qtyMax":number}],"assumptions":string[],"missing":string[],"questions":string[],"confidence":"low|medium|high"}. Use ONLY these activityIds: ${JSON.stringify(i.activities)}. Never output prices. Do not invent exact measurements; give ranges if unsure. Customer area (m²): ${i.area??'unknown'}. Project types: ${i.types.join(',')}. Sub-areas (m²/m): ${JSON.stringify(i.areas)}. Remove old: ${i.remove}. Description: ${i.desc.slice(0,1500)}`
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.ANTHROPIC_MODEL||'claude-sonnet-5-5',max_tokens:1000,messages:[{role:'user',content:[...images.map(b=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b.toString('base64')}})),{type:'text',text:prompt}]}]})})
-  if(!r.ok)throw new Error('provider '+r.status)
-  const d=await r.json();const j=JSON.parse(String(d.content?.[0]?.text).replace(/```json|```/g,'').trim())
-  const items=(j.items||[]).filter((x:any)=>i.activities.some(a=>a.id===x.activityId)&&isFinite(x.qtyMin)&&isFinite(x.qtyMax)).map((x:any)=>({activityId:x.activityId,qtyMin:Math.max(0,+x.qtyMin),qtyMax:Math.max(0,+x.qtyMax),source:(i.area?'customer':'assumed') as 'customer'|'assumed'}))
+  const j=JSON.parse((await ask(PROMPT(i,insp.length>0),images,insp)).replace(/```json|```/g,'').trim())
+  const items=(Array.isArray(j.items)?j.items:[]).flatMap((x:any)=>{const a=i.activities.find(y=>y.id===x.activityId);const lo=+x.qtyMin,hi=+x.qtyMax;if(!a||!isFinite(lo+hi))return []
+   const g=i.areas[a.id];if(g>0)return [{activityId:a.id,qtyMin:g,qtyMax:g,source:'customer' as const}]
+   let mid=(Math.max(0,lo)+Math.max(0,hi))/2;if(a.unit==='m²'&&i.area&&i.area>0)mid=Math.min(mid,i.area*1.1)
+   const q=(n:number)=>Math.round(n*10)/10;return [{activityId:a.id,qtyMin:q(mid*.9),qtyMax:q(mid*1.1),source:'assumed' as const}]})
+  if(!items.length)throw new Error('empty')
   const s=(a:any)=>(Array.isArray(a)?a:[]).slice(0,8).map((x:any)=>String(x).slice(0,200))
-  return {mode:'ai',items,assumptions:[...s(j.assumptions),'a_excl'],missing:s(j.missing),questions:s(j.questions),confidence:['low','medium','high'].includes(j.confidence)?j.confidence:'low'}
- }catch(e){console.error('AI provider failed');return demo(i)} // never log content
+  return {mode:'ai',summary:String(j.summary||'').slice(0,400),items,assumptions:[...s(j.assumptions),...(i.access==='hard'?['a_access']:[]),...(i.remove?['a_remove']:[]),'a_excl'],missing:s(j.missing),questions:s(j.questions),confidence:['low','medium','high'].includes(j.confidence)?j.confidence:'low'}
+ }catch{console.error('AI provider failed');return demo(i)} // never log content
 }

@@ -28,3 +28,12 @@ Company settings persist in `sessionStorage` after "Instellingen opslaan" (visit
 
 ## v4 notes
 Estimate quantities are read-only for visitors. Step 2 leads with the style make-over option (description optional when inspiration photos are uploaded). The visualisation opens on a default style. Demo analyzer: specific words in the description override broad project types; "keramische" shows the variant name "Keramische bestrating / terras aanleggen".
+
+## v5: activate real AI on Vercel
+1. Vercel → your project → Settings → Environment Variables. Add (Production + Preview):
+   - `ANTHROPIC_API_KEY` = your Anthropic key → real *tuinontwerper* photo analysis (`/api/analyze`).
+   - `OPENAI_API_KEY` = your OpenAI key → real "after" renders (`/api/visualize`, `gpt-image-1` edits your photo) and photo analysis if no Anthropic key.
+   - Optional: `OPENAI_IMAGE_MODEL`, `OPENAI_VISION_MODEL`, `ANTHROPIC_MODEL`, or `REPLICATE_API_TOKEN` for images instead of OpenAI.
+2. Redeploy (env changes only apply to new deployments).
+3. Image generation can take 20–60 s; routes set `maxDuration=60` (check your Vercel plan limits).
+Without keys the app runs in labelled Demo Mode. With keys, photos go to the provider(s) and are not stored by us; mention this in your privacy policy.

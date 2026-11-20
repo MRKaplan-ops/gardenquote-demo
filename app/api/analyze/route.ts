@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server'
 import sharp from 'sharp'
 import {analyze,type Input} from '@/lib/ai'
-export const runtime='nodejs'
+export const runtime='nodejs';export const maxDuration=60
 const OK=['image/jpeg','image/png','image/webp'],MAX=8*1024*1024
 let hits:number[]=[] // global limiter: no IPs collected
 const bad=(m:string,s=400)=>NextResponse.json({error:m},{status:s})
@@ -15,11 +15,11 @@ export async function POST(req:NextRequest){
   const types:string[]=Array.isArray(p.types)?p.types.slice(0,8).filter((x:unknown):x is string=>typeof x==='string').map((x:string)=>x.slice(0,20)):[]
   const areas:Record<string,number>={};if(p.areas&&typeof p.areas==='object')for(const [k,v] of Object.entries(p.areas)){const n=Number(v);if(k.length<=20&&n>=0&&n<=100000)areas[k]=n}
   if((area!==null&&!(area>=0&&area<=100000))||!acts.length)return bad('invalid')
-  const files=f.getAll('images').filter((x):x is File=>typeof x!=='string');if(files.length>8)return bad('too many images')
+  const pick=(k:string)=>f.getAll(k).filter((x):x is File=>typeof x!=='string'),files=pick('images'),inspF=pick('inspiration');if(files.length>5||inspF.length>3)return bad('too many images')
   const bufs:Buffer[]=[]
-  for(const file of files){if(!OK.includes(file.type)||file.size>MAX)return bad('invalid image')
+  for(const file of [...files,...inspF]){if(!OK.includes(file.type)||file.size>MAX)return bad('invalid image')
    bufs.push(await sharp(Buffer.from(await file.arrayBuffer())).rotate().resize(1400,1400,{fit:'inside'}).jpeg({quality:82}).toBuffer())} // re-encode drops EXIF; memory only, nothing written to disk
   const input:Input={types,areas,desc:String(p.desc||'').slice(0,2000),area,remove:!!p.remove,access:p.access==='hard'?'hard':'easy',materials:String(p.materials||'').slice(0,200),time:String(p.time||'').slice(0,20),activities:acts}
-  return NextResponse.json(await analyze(input,bufs))
+  return NextResponse.json(await analyze(input,bufs.slice(0,files.length),bufs.slice(files.length)))
  }catch{return bad('invalid request')}
 }
