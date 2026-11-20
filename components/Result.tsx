@@ -28,6 +28,7 @@ export function Result({items,tier,setTier,before,insp,wish,summary,scene,inspir
    {hasMat&&<div className="mt-3 grid gap-3 sm:grid-cols-3">{TIERS.map((x,i)=>{const r=estimate(c,items,x.m,hard,x.id);return <button key={x.id} aria-pressed={tier===i} onClick={()=>chooseTier(i)} className="relative rounded border border-stone bg-white p-4 text-left" style={tier===i?{borderColor:c.color,boxShadow:`0 0 0 2px ${c.color}`}:undefined}>
     {i===1&&<span className="absolute -top-2 right-2 rounded-full px-2 py-0.5 text-xs text-white" style={{background:c.color}}>{t('popular')}</span>}
     <b>{t('tier_'+x.id)}</b><p className="text-sm">{t('tier_'+x.id+'_d')}</p><p className="mt-2 font-display text-lg">{m0(r.roundedMin)} – {m0(r.roundedMax)}</p></button>})}</div>}
+   {hasMat&&<p className="mt-2 text-xs">{t('tier_scope')}</p>}
    {hasMat&&<p className="mt-3 inline-block rounded-full border border-stone bg-white px-3 py-1 text-sm">{t(mid?'maint_mid':'maint_low')}</p>}
    <div className="mt-3"><Estimate items={items} mult={TIERS[tier].m} hard={hard} tierId={TIERS[tier].id}/></div></section>
   {hasMat&&<section><h2 className="font-display text-xl font-bold">{t('viz_h')}</h2>

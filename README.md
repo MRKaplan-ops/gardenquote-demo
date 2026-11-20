@@ -54,3 +54,6 @@ Without keys the app runs in labelled Demo Mode. With keys, photos go to the pro
 
 ## v9: debugging /api/visualize
 Every response contains `v:"visualize-dalle3-v9"`. If you do not see it in the browser (DevTools → Network → /api/visualize), Vercel is still serving an older deployment. On errors the response and the screen show OpenAI's `code`, `param` and `message`, plus `sent` (the exact keys posted: model, prompt, n, size, response_format).
+
+## v10
+`/api/visualize` sends only `{model,prompt,n,size}` to dall-e-3 and accepts `b64_json` or `url` (downloaded server-side). Tier scope: Basis (concrete tiles €55, turf instead of artificial grass, softwood decking) and Comfort exclude pergola/lighting/water features unless they are the sole goal; Luxe adds a pergola over ~40% of the terrace plus a lighting set. Change the scope rules in `scope()` in `lib/pricing/engine.ts`.

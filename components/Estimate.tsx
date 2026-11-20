@@ -6,7 +6,7 @@ export function Estimate({items,mult=1,hard=false,tierId=''}:{items:Item[];mult?
  const {c,t,lang}=useApp(),e=estimate(c,items,mult,hard,tierId),m=(n:number)=>money(n,c.currency,c.locale),m0=(n:number)=>money(n,c.currency,c.locale,0)
  const rng=(a:number,b:number,f=m)=>a===b?f(a):`${f(a)} – ${f(b)}`
  return <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-stone"><th className="py-2">{t('item')}</th><th>{t('qty')}</th><th>{t('price')}</th><th className="text-right">{t('subtotal')}</th></tr></thead><tbody>
-  {e.lines.map(l=><tr key={l.activity.id} className="border-b border-stone"><td className="py-2 pr-2">{actName(l.activity,lang,l.variant)}</td>
+  {e.lines.map(l=><tr key={l.activity.id} className="border-b border-stone"><td className="py-2 pr-2">{actName(l.activity,lang,l.variant)}{l.auto&&<span className="ml-1 text-xs">({t('incl_luxe')})</span>}</td>
    <td className="whitespace-nowrap">{l.qtyMin===l.qtyMax?num(l.qtyMin,c.locale):`${num(l.qtyMin,c.locale)}–${num(l.qtyMax,c.locale)}`} {unitLabel(l.activity.unit,lang)}</td>
    <td className="whitespace-nowrap">{m(l.activity.price)}/{unitLabel(l.activity.unit,lang)}</td><td className="text-right">{rng(l.subMin,l.subMax)}</td></tr>)}
   {e.surMax>0&&<tr><td colSpan={3} className="py-2">{t('hardRow')}</td><td className="text-right">{rng(e.surMin,e.surMax)}</td></tr>}
