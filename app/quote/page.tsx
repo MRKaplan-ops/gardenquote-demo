@@ -2,7 +2,6 @@
 import {useState} from 'react'
 import {useApp} from '@/components/Providers'
 import {Result} from '@/components/Result'
-import {gardenSvg} from '@/lib/visual'
 import {actName} from '@/lib/i18n'
 import {PRIMARY,TYPE_CATS,type Analysis} from '@/lib/ai'
 import {MAT,TIERS,type Item} from '@/lib/pricing/engine'
@@ -27,7 +26,7 @@ export default function Quote(){
  const pdf=async()=>{setPdfBusy(true);try{const [{pdf},{EstimatePdf}]=await Promise.all([import('@react-pdf/renderer'),import('@/components/EstimatePdf')])
   const blob=await pdf(<EstimatePdf c={c} items={items} desc={desc} images={imgs.filter(x=>x.startsWith('data:image/jpeg'))} mult={TIERS[tier].m} tierName={hasMat?t('tier_'+TIERS[tier].id):''} hard={access==='hard'} notes={(an?.assumptions||[]).map(t)} t={t} lang={lang}/>).toBlob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='estimate.pdf';a.click();URL.revokeObjectURL(a.href)}catch{setErr(t('err'))}setPdfBusy(false)}
  const descOptional=types.length>0&&!types.includes('other'),hasMat=items.some(i=>MAT.includes(i.activityId))
- const loadExample=()=>{setErr('');setImgs([gardenSvg('before')]);setTypes(['paving','artificial']);setDesc('Nieuw terras met keramische tegels en kunstgras, oude bestrating verwijderen, bestaande schutting laten staan.');setArea('55')}
+ const loadExample=async()=>{setErr('');try{const r=await fetch('/sample-garden.jpg');if(!r.ok)throw new Error('x');const u=await toJpeg(new File([await r.blob()],'sample.jpg',{type:'image/jpeg'}));setImgs([u]);setTypes(['paving','artificial']);setDesc('Nieuw terras met keramische tegels en kunstgras, oude bestrating verwijderen, bestaande schutting laten staan.');setArea('55')}catch{setErr(t('e_sample'))}}
  const next=()=>{setErr('');if(step===1&&!imgs.length)return setErr(t('e_photo'));if(step===2){if((!types.length||types.includes('other'))&&desc.trim().length<10)return setErr(t('e_desc'))}setStep(step+1)}
  const nav=<div className="mt-6 flex gap-3">{step>1&&<button className="btn2" onClick={()=>setStep(step-1)}>{t('back')}</button>}{step<3&&<button className="btn" onClick={next}>{t('next')}</button>}{step===3&&<button className="btn" onClick={run} disabled={busy}>{busy?t('analyzing'):t('analyze')}</button>}</div>
  const lists:[string,string[]][]=an?[['assumptions',an.assumptions],['missing',an.missing],['questions',an.questions]]:[]
@@ -49,7 +48,7 @@ export default function Quote(){
    {nav}</section>}
   {step>=5&&an&&<section className="space-y-5"><p className="rounded border border-straw bg-white p-3 text-sm">{t(an.mode==='demo'?'demo':'ai')}</p>{an.summary&&<p className="rounded bg-white p-3 text-sm">{an.summary}</p>}
    <div><h2 className="font-display text-xl font-bold">{t('cats')}</h2><ul className="mt-1 text-sm">{an.items.map(i=>{const a=c.activities.find(x=>x.id===i.activityId);return a&&<li key={i.activityId}>{actName(a,lang,i.variant)} <span className="text-ink/70">({t(i.source==='customer'?'customer':'assumed')})</span></li>})}</ul><p className="mt-1 text-sm">{t('confidence')}: {t(an.confidence)}</p></div>
-   <Result items={items} tier={tier} setTier={setTier} before={imgs[0]||''} wish={types.map(x=>t('ty_'+x)).join(', ')+'. '+desc} hard={access==='hard'} onPdf={pdf} pdfBusy={pdfBusy}/>
+   <Result items={items} tier={tier} setTier={setTier} before={imgs[0]||''} insp={insp} wish={types.map(x=>t('ty_'+x)).join(', ')+'. '+desc} hard={access==='hard'} onPdf={pdf} pdfBusy={pdfBusy}/>
    {lists.map(([k,l])=>l.length>0&&<div key={k}><h3 className="font-medium">{t(k)}</h3><ul className="list-disc pl-5 text-sm">{l.map(x=><li key={x}>{t(x)}</li>)}</ul></div>)}
    <p className="text-sm font-medium">{t('disclaimer')}</p>
    <div className="flex gap-3"><button className="btn2" onClick={()=>{setStep(1);setAn(null);setItems([]);setImgs([]);setInsp([]);setTier(1);setDesc('');setArea('');setAreas({});setFenceLen('')}}>{t('restart')}</button></div></section>}</div>}

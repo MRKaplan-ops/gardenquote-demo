@@ -37,3 +37,7 @@ Estimate quantities are read-only for visitors. Step 2 leads with the style make
 2. Redeploy (env changes only apply to new deployments).
 3. Image generation can take 20–60 s; routes set `maxDuration=60` (check your Vercel plan limits).
 Without keys the app runs in labelled Demo Mode. With keys, photos go to the provider(s) and are not stored by us; mention this in your privacy policy.
+
+## v6: photorealistic visuals only (no drawings anywhere)
+- **Visualisation**: `/api/visualize` needs `OPENAI_API_KEY` (or `REPLICATE_API_TOKEN`). It sends the current garden photo + inspiration photos to `gpt-image-1` (image edit), retries without `input_fidelity`, then falls back to `dall-e-3` (text-only). Without a key the section says AI is not configured; it never shows a drawing. If generation fails the UI shows the OpenAI error code (e.g. `organization_must_be_verified`: `gpt-image-1` requires a verified OpenAI organization; verify it in the OpenAI dashboard, or set `OPENAI_IMAGE_MODEL=dall-e-3`).
+- **"Laad voorbeeldproject"** loads `public/sample-garden.jpg`. Create it once with `OPENAI_API_KEY=sk-... npm run sample`, or copy any real landscape JPEG of a dated Dutch backyard to that path, and commit it.

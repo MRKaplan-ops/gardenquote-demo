@@ -4,17 +4,19 @@ import {useApp} from './Providers'
 import {Estimate} from './Estimate'
 import {estimate,MAT,TIERS,type Item} from '@/lib/pricing/engine'
 import {money,actName,unitLabel} from '@/lib/i18n'
-import {gardenSvg} from '@/lib/visual'
 const STYLES=['modern','kids','green','luxe','low']
 const defStyle=(it:Item[])=>{const h=(id:string)=>it.some(i=>i.activityId===id);return h('canopy')?'luxe':h('artificial')?'kids':h('lawn')||h('planting')?'green':'modern'}
-export function Result({items,tier,setTier,before,wish,hard,onPdf,pdfBusy}:{items:Item[];wish:string;hard:boolean;tier:number;setTier:(n:number)=>void;before:string;onPdf:()=>void;pdfBusy:boolean}){
+export function Result({items,tier,setTier,before,insp,wish,hard,onPdf,pdfBusy}:{items:Item[];insp:string[];wish:string;hard:boolean;tier:number;setTier:(n:number)=>void;before:string;onPdf:()=>void;pdfBusy:boolean}){
  const {c,t,lang}=useApp(),m0=(n:number)=>money(n,c.currency,c.locale,0)
- const [def]=useState(()=>defStyle(items)),[used,setUsed]=useState<string[]>([def]),[style,setStyle]=useState(def),[pos,setPos]=useState(50),[modal,setModal]=useState(false),[f,setF]=useState({name:'',contact:'',when:'',time:'t2'}),[gens,setGens]=useState<Record<string,string>>({}),[busy,setBusy]=useState(false)
+ const [def]=useState(()=>defStyle(items)),[used,setUsed]=useState<string[]>([def]),[style,setStyle]=useState(def),[pos,setPos]=useState(50),[modal,setModal]=useState(false),[f,setF]=useState({name:'',contact:'',when:'',time:'t2'}),[gens,setGens]=useState<Record<string,string>>({}),[errs,setErrs]=useState<Record<string,string>>({}),[busy,setBusy]=useState(false),[off,setOff]=useState(false)
  const hasMat=items.some(i=>MAT.includes(i.activityId)),e=estimate(c,items,TIERS[tier].m,hard),range=`${m0(e.roundedMin)} – ${m0(e.roundedMax)}`,left=5-used.length
- const gen=async(s:string)=>{if(gens[s]!==undefined)return;setBusy(true);let img=''
-  try{const fd=new FormData();fd.append('style',s);fd.append('wish',wish);if(before.startsWith('data:image/jpeg'))fd.append('image',await (await fetch(before)).blob(),'g.jpg')
-   const d=await (await fetch('/api/visualize',{method:'POST',body:fd})).json();if(d.mode==='ai'&&typeof d.image==='string')img=d.image}catch{}
-  setGens(g=>({...g,[s]:img}));setBusy(false)} // '' = demo illustration
+ const gen=async(s:string)=>{if(gens[s]||busy)return;setBusy(true);setErrs(x=>({...x,[s]:''}))
+  try{const fd=new FormData();fd.append('style',s);fd.append('wish',wish);fd.append('image',await (await fetch(before)).blob(),'g.jpg')
+   for(const u of insp)fd.append('inspiration',await (await fetch(u)).blob(),'i.jpg')
+   const d=await (await fetch('/api/visualize',{method:'POST',body:fd})).json()
+   if(d.mode==='ai'&&typeof d.image==='string')setGens(g=>({...g,[s]:d.image}));else if(d.mode==='off')setOff(true);else throw new Error(String(d.code||d.status||'error'))}
+  catch(err){setErrs(x=>({...x,[s]:err instanceof Error?err.message:'error'}));setUsed(u=>u.filter(y=>y!==s))}
+  setBusy(false)}
  useEffect(()=>{if(hasMat)gen(def)},[])
  const pick=(s:string)=>{if(!used.includes(s)){if(left<=0)return;setUsed([...used,s])}setStyle(s);setPos(50);gen(s)}
  const msg=hasMat?t('wa_msg').replace('{s}',style?t('st_'+style):'-').replace('{p}',t('tier_'+TIERS[tier].id)).replace('{r}',range):t('wa_msg2').replace('{r}',range)
@@ -27,14 +29,15 @@ export function Result({items,tier,setTier,before,wish,hard,onPdf,pdfBusy}:{item
     <b>{t('tier_'+x.id)}</b><p className="text-sm">{t('tier_'+x.id+'_d')}</p><p className="mt-2 font-display text-lg">{m0(r.roundedMin)} – {m0(r.roundedMax)}</p></button>})}</div>}
    {hasMat&&<p className="mt-3 inline-block rounded-full border border-stone bg-white px-3 py-1 text-sm">{t(mid?'maint_mid':'maint_low')}</p>}
    <div className="mt-3"><Estimate items={items} mult={TIERS[tier].m} hard={hard}/></div></section>
-  {hasMat&&<section><h2 className="font-display text-xl font-bold">{t('viz_h')}</h2><p className="mt-1 text-sm">{t('viz_left').replace('{n}',String(left))}</p>
-   <div className="mt-2 flex flex-wrap gap-2">{STYLES.map(s=><button key={s} className={style===s?'btn':'btn2'} onClick={()=>pick(s)}>{t('st_'+s)}</button>)}</div>
-   {style?<div className="mt-3"><div className="relative aspect-[5/3] overflow-hidden rounded border border-stone bg-white">
-    <img src={gens[style]||gardenSvg(style)} alt={t('viz_after')} className="absolute inset-0 h-full w-full object-cover"/>
-    <img src={before||gardenSvg('before')} alt={t('viz_before')} className="absolute inset-0 h-full w-full object-cover" style={{clipPath:`inset(0 ${100-pos}% 0 0)`}}/>
-    <div className="absolute inset-y-0 w-0.5 bg-white" style={{left:`${pos}%`}}/><span className="absolute left-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_before')}</span><span className="absolute right-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_after')}</span></div>
-    <input type="range" min="0" max="100" value={pos} onChange={ev=>setPos(Number(ev.target.value))} aria-label={t('viz_before')+' / '+t('viz_after')} className="mt-2 w-full"/>
-    <p className="text-xs">{busy&&gens[style]===undefined?t('viz_load'):gens[style]?t('viz_ai'):t('viz_demo')}</p></div>:<p className="mt-3 text-sm">{t('viz_pick')}</p>}</section>}
+  {hasMat&&<section><h2 className="font-display text-xl font-bold">{t('viz_h')}</h2>
+   {off?<p className="mt-2 text-sm">{t('viz_off')}</p>:<><p className="mt-1 text-sm">{t('viz_left').replace('{n}',String(left))}</p>
+    <div className="mt-2 flex flex-wrap gap-2">{STYLES.map(s=><button key={s} disabled={busy} className={style===s?'btn':'btn2'} onClick={()=>pick(s)}>{t('st_'+s)}</button>)}</div>
+    {gens[style]?<div className="mt-3"><div className="relative aspect-[3/2] overflow-hidden rounded border border-stone bg-white">
+     <img src={gens[style]} alt={t('viz_after')} className="absolute inset-0 h-full w-full object-cover"/>
+     <img src={before} alt={t('viz_before')} className="absolute inset-0 h-full w-full object-cover" style={{clipPath:`inset(0 ${100-pos}% 0 0)`}}/>
+     <div className="absolute inset-y-0 w-0.5 bg-white" style={{left:`${pos}%`}}/><span className="absolute left-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_before')}</span><span className="absolute right-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_after')}</span></div>
+     <input type="range" min="0" max="100" value={pos} onChange={ev=>setPos(Number(ev.target.value))} aria-label={t('viz_before')+' / '+t('viz_after')} className="mt-2 w-full"/><p className="text-xs">{t('viz_ai')}</p></div>
+    :busy?<p className="mt-3 text-sm">{t('viz_load')}</p>:errs[style]?<p role="alert" className="mt-3 text-sm">{t('viz_err')} ({errs[style]})</p>:null}</>}</section>}
   <section className="rounded-lg border border-stone bg-white p-5"><p className="inline-block rounded-full px-3 py-1 text-sm text-white" style={{background:c.color}}>{t('avail').replace('{t}',c.leadTime||'')}</p>
    <h2 className="mt-4 font-display text-xl font-bold">{t('next_h')}</h2><ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">{['n1','n2','n3'].map(k=><li key={k}>{t(k)}</li>)}</ol>
    <div className="mt-4 flex flex-wrap gap-3"><button className="btn" onClick={()=>setModal(true)}>{t('advice')}</button>
