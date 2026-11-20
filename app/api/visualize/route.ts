@@ -15,7 +15,7 @@ export async function POST(req:NextRequest){
   const prompt=`Photorealistic professional architectural photograph of a renovated Dutch back garden (achtertuin), full-frame DSLR, 24mm lens, eye level, soft natural daylight. Layout, boundaries and proportions of the existing garden: ${g('scene',400)||g('summary',400)||'a typical narrow rectangular Dutch backyard behind a brick terraced house'}. Finishing level: ${TIER[tier]}. Style direction: ${STY[style]}. Inspiration and colour notes: ${g('inspiration',300)||'none'}. Customer wishes: ${g('wish',500)}. Keep it a realistic, buildable Dutch backyard with a brick house, boundary fences and plausible proportions, and strictly match the finishing level above. Loose furniture, barbecues and accessories are only for atmosphere. Realistic materials, natural shadows. NOT an illustration, NOT a cartoon, NOT a 3D render, no text, no people.`.slice(0,3800)
   const cleanPrompt=prompt.replace(/[\u0000-\u001f]+/g,' ').replace(/\s+/g,' ').trim()
   if(oa){
-   const body={model:'gpt-image-1',prompt:cleanPrompt,n:1,size:'1024x1024'} // response_format is rejected by the API (unknown_parameter), so it is not sent
+   const body={model:'gpt-image-2.6-sunburst',prompt:cleanPrompt,n:1,size:'1024x1024'} // response_format is rejected by the API (unknown_parameter), so it is not sent
    const r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify(body)})
    const d:any=await r.json().catch(()=>({}))
    if(!r.ok){const e=d?.error||{};console.error('openai image error',r.status,e.code,e.param,String(e.message||'').slice(0,300))
