@@ -6,12 +6,12 @@ import {estimate,MAT,TIERS,type Item} from '@/lib/pricing/engine'
 import {money,actName,unitLabel} from '@/lib/i18n'
 const STYLES=['modern','kids','green','luxe','low']
 const defStyle=(it:Item[])=>{const h=(id:string)=>it.some(i=>i.activityId===id);return h('canopy')?'luxe':h('artificial')?'kids':h('lawn')||h('planting')?'green':'modern'}
-export function Result({items,tier,setTier,before,insp,wish,hard,onPdf,pdfBusy}:{items:Item[];insp:string[];wish:string;hard:boolean;tier:number;setTier:(n:number)=>void;before:string;onPdf:()=>void;pdfBusy:boolean}){
+export function Result({items,tier,setTier,before,insp,wish,summary,hard,onPdf,pdfBusy}:{items:Item[];summary:string;insp:string[];wish:string;hard:boolean;tier:number;setTier:(n:number)=>void;before:string;onPdf:()=>void;pdfBusy:boolean}){
  const {c,t,lang}=useApp(),m0=(n:number)=>money(n,c.currency,c.locale,0)
  const [def]=useState(()=>defStyle(items)),[used,setUsed]=useState<string[]>([def]),[style,setStyle]=useState(def),[pos,setPos]=useState(50),[modal,setModal]=useState(false),[f,setF]=useState({name:'',contact:'',when:'',time:'t2'}),[gens,setGens]=useState<Record<string,string>>({}),[errs,setErrs]=useState<Record<string,string>>({}),[busy,setBusy]=useState(false),[off,setOff]=useState(false)
  const hasMat=items.some(i=>MAT.includes(i.activityId)),e=estimate(c,items,TIERS[tier].m,hard),range=`${m0(e.roundedMin)} – ${m0(e.roundedMax)}`,left=5-used.length
  const gen=async(s:string)=>{if(gens[s]||busy)return;setBusy(true);setErrs(x=>({...x,[s]:''}))
-  try{const fd=new FormData();fd.append('style',s);fd.append('wish',wish);fd.append('image',await (await fetch(before)).blob(),'g.jpg')
+  try{const fd=new FormData();fd.append('style',s);fd.append('wish',wish);fd.append('summary',summary);fd.append('image',await (await fetch(before)).blob(),'g.jpg')
    for(const u of insp)fd.append('inspiration',await (await fetch(u)).blob(),'i.jpg')
    const d=await (await fetch('/api/visualize',{method:'POST',body:fd})).json()
    if(d.mode==='ai'&&typeof d.image==='string')setGens(g=>({...g,[s]:d.image}));else if(d.mode==='off')setOff(true);else throw new Error(String(d.code||d.status||'error'))}
@@ -32,7 +32,7 @@ export function Result({items,tier,setTier,before,insp,wish,hard,onPdf,pdfBusy}:
   {hasMat&&<section><h2 className="font-display text-xl font-bold">{t('viz_h')}</h2>
    {off?<p className="mt-2 text-sm">{t('viz_off')}</p>:<><p className="mt-1 text-sm">{t('viz_left').replace('{n}',String(left))}</p>
     <div className="mt-2 flex flex-wrap gap-2">{STYLES.map(s=><button key={s} disabled={busy} className={style===s?'btn':'btn2'} onClick={()=>pick(s)}>{t('st_'+s)}</button>)}</div>
-    {gens[style]?<div className="mt-3"><div className="relative aspect-[3/2] overflow-hidden rounded border border-stone bg-white">
+    {gens[style]?<div className="mt-3"><div className="relative aspect-[4/3] overflow-hidden rounded border border-stone bg-white">
      <img src={gens[style]} alt={t('viz_after')} className="absolute inset-0 h-full w-full object-cover"/>
      <img src={before} alt={t('viz_before')} className="absolute inset-0 h-full w-full object-cover" style={{clipPath:`inset(0 ${100-pos}% 0 0)`}}/>
      <div className="absolute inset-y-0 w-0.5 bg-white" style={{left:`${pos}%`}}/><span className="absolute left-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_before')}</span><span className="absolute right-2 top-2 rounded bg-white/90 px-2 text-xs">{t('viz_after')}</span></div>

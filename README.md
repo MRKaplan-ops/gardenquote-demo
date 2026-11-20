@@ -41,3 +41,8 @@ Without keys the app runs in labelled Demo Mode. With keys, photos go to the pro
 ## v6: photorealistic visuals only (no drawings anywhere)
 - **Visualisation**: `/api/visualize` needs `OPENAI_API_KEY` (or `REPLICATE_API_TOKEN`). It sends the current garden photo + inspiration photos to `gpt-image-1` (image edit), retries without `input_fidelity`, then falls back to `dall-e-3` (text-only). Without a key the section says AI is not configured; it never shows a drawing. If generation fails the UI shows the OpenAI error code (e.g. `organization_must_be_verified`: `gpt-image-1` requires a verified OpenAI organization; verify it in the OpenAI dashboard, or set `OPENAI_IMAGE_MODEL=dall-e-3`).
 - **"Laad voorbeeldproject"** loads `public/sample-garden.jpg`. Create it once with `OPENAI_API_KEY=sk-... npm run sample`, or copy any real landscape JPEG of a dated Dutch backyard to that path, and commit it.
+
+## v7 notes
+- `public/sample-garden.jpg` is bundled so "Laad voorbeeldproject" works out of the box. It is a **procedurally rendered stand-in (not a real photograph)** made by `scripts/render-sample.py`. For a real look: `OPENAI_API_KEY=sk-... npm run sample` (AI photo) or copy any real JPEG over it.
+- `/api/visualize` uses minimal OpenAI parameters: `gpt-image-1` (image edit with your photos, then plain generation) and finally `dall-e-3` with `response_format: b64_json`. Exact OpenAI errors are logged server-side (`openai image error ...`). Optional `OPENAI_IMAGE_SIZE` (default `1024x1024`).
+- AI and demo analysis now return single point quantities; only the dashboard margins (`Marge onder/boven %`, default 7/7) widen the price range.

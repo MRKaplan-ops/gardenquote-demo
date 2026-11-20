@@ -48,7 +48,7 @@ export default function Quote(){
    {nav}</section>}
   {step>=5&&an&&<section className="space-y-5"><p className="rounded border border-straw bg-white p-3 text-sm">{t(an.mode==='demo'?'demo':'ai')}</p>{an.summary&&<p className="rounded bg-white p-3 text-sm">{an.summary}</p>}
    <div><h2 className="font-display text-xl font-bold">{t('cats')}</h2><ul className="mt-1 text-sm">{an.items.map(i=>{const a=c.activities.find(x=>x.id===i.activityId);return a&&<li key={i.activityId}>{actName(a,lang,i.variant)} <span className="text-ink/70">({t(i.source==='customer'?'customer':'assumed')})</span></li>})}</ul><p className="mt-1 text-sm">{t('confidence')}: {t(an.confidence)}</p></div>
-   <Result items={items} tier={tier} setTier={setTier} before={imgs[0]||''} insp={insp} wish={types.map(x=>t('ty_'+x)).join(', ')+'. '+desc} hard={access==='hard'} onPdf={pdf} pdfBusy={pdfBusy}/>
+   <Result items={items} tier={tier} setTier={setTier} before={imgs[0]||''} insp={insp} summary={an?.summary||''} wish={types.map(x=>t('ty_'+x)).join(', ')+'. '+desc} hard={access==='hard'} onPdf={pdf} pdfBusy={pdfBusy}/>
    {lists.map(([k,l])=>l.length>0&&<div key={k}><h3 className="font-medium">{t(k)}</h3><ul className="list-disc pl-5 text-sm">{l.map(x=><li key={x}>{t(x)}</li>)}</ul></div>)}
    <p className="text-sm font-medium">{t('disclaimer')}</p>
    <div className="flex gap-3"><button className="btn2" onClick={()=>{setStep(1);setAn(null);setItems([]);setImgs([]);setInsp([]);setTier(1);setDesc('');setArea('');setAreas({});setFenceLen('')}}>{t('restart')}</button></div></section>}</div>}
