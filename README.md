@@ -46,3 +46,8 @@ Without keys the app runs in labelled Demo Mode. With keys, photos go to the pro
 - `public/sample-garden.jpg` is bundled so "Laad voorbeeldproject" works out of the box. It is a **procedurally rendered stand-in (not a real photograph)** made by `scripts/render-sample.py`. For a real look: `OPENAI_API_KEY=sk-... npm run sample` (AI photo) or copy any real JPEG over it.
 - `/api/visualize` uses minimal OpenAI parameters: `gpt-image-1` (image edit with your photos, then plain generation) and finally `dall-e-3` with `response_format: b64_json`. Exact OpenAI errors are logged server-side (`openai image error ...`). Optional `OPENAI_IMAGE_SIZE` (default `1024x1024`).
 - AI and demo analysis now return single point quantities; only the dashboard margins (`Marge onder/boven %`, default 7/7) widen the price range.
+
+## v8 notes
+- `/api/visualize` calls `dall-e-3` directly (`size 1024x1024`, `response_format b64_json`). It cannot take photos: the prompt is built from the AI's text description of the garden (`scene`), inspiration notes, the style and the finishing tier. Only text leaves your server for this step (no photo). `OPENAI_IMAGE_*` variables are no longer used.
+- Price list uses material classes (`paving_basic/comfort/luxury`, `decking_*`); the selected tier picks the class. Saved dashboard settings from older versions keep the old price list: press "Demo-data herstellen" once.
+- "Laad voorbeeldproject" now only loads `/sample-garden.jpg` (no pre-filled text or area).

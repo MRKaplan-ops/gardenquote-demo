@@ -12,5 +12,6 @@ describe('estimate',()=>{
 describe('rounding',()=>{
  it('rounds totals to nearest 50 by default',()=>{expect(estimate(base,items).roundedMax).toBe(4300)})
  it('respects roundTo',()=>{expect(estimate({...base,roundTo:100},items).roundedMax).toBe(4300);expect(estimate({...base,roundTo:0},items).roundedMax).toBe(4283.4)})})
-describe('tiers',()=>{it('scales material rates only',()=>{const b={...base,activities:[{id:'paving',name:'x',unit:'m²',price:100},{id:'soil',name:'y',unit:'m²',price:10}]};const e=estimate(b,[{activityId:'paving',qtyMin:10,qtyMax:10},{activityId:'soil',qtyMin:10,qtyMax:10}],1.3);expect(e.subMin).toBe(1400)})})
+describe('tiers',()=>{it('scales material rates only',()=>{const b={...base,activities:[{id:'lawn',name:'x',unit:'m²',price:100},{id:'soil',name:'y',unit:'m²',price:10}]};const e=estimate(b,[{activityId:'lawn',qtyMin:10,qtyMax:10},{activityId:'soil',qtyMin:10,qtyMax:10}],1.3);expect(e.subMin).toBe(1400)})})
 describe('access',()=>{it('adds 15% labour surcharge when access is limited',()=>{const e=estimate(base,items,1,true);expect(e.surMin).toBe(531);expect(e.netMin).toBe(4071)})})
+describe('material classes',()=>{it('uses the class matching the tier',()=>{const b={...base,activities:[{id:'paving_basic',name:'a',unit:'m²',price:65},{id:'paving_luxury',name:'b',unit:'m²',price:125}]};const it0=[{activityId:'paving',qtyMin:10,qtyMax:10}];expect(estimate(b,it0,1,false,'basic').subMin).toBe(650);expect(estimate(b,it0,1.3,false,'luxury').subMin).toBe(1250)})})
