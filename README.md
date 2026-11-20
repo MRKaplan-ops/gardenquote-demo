@@ -51,3 +51,6 @@ Without keys the app runs in labelled Demo Mode. With keys, photos go to the pro
 - `/api/visualize` calls `dall-e-3` directly (`size 1024x1024`, `response_format b64_json`). It cannot take photos: the prompt is built from the AI's text description of the garden (`scene`), inspiration notes, the style and the finishing tier. Only text leaves your server for this step (no photo). `OPENAI_IMAGE_*` variables are no longer used.
 - Price list uses material classes (`paving_basic/comfort/luxury`, `decking_*`); the selected tier picks the class. Saved dashboard settings from older versions keep the old price list: press "Demo-data herstellen" once.
 - "Laad voorbeeldproject" now only loads `/sample-garden.jpg` (no pre-filled text or area).
+
+## v9: debugging /api/visualize
+Every response contains `v:"visualize-dalle3-v9"`. If you do not see it in the browser (DevTools → Network → /api/visualize), Vercel is still serving an older deployment. On errors the response and the screen show OpenAI's `code`, `param` and `message`, plus `sent` (the exact keys posted: model, prompt, n, size, response_format).

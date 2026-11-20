@@ -14,7 +14,7 @@ export function Result({items,tier,setTier,before,insp,wish,summary,scene,inspir
  const gen=async(k:string,s:string,tr:string)=>{setBusy(true)
   try{const fd=new FormData();fd.append('style',s);fd.append('tier',tr);fd.append('wish',wish);fd.append('summary',summary);fd.append('scene',scene);fd.append('inspiration',inspiration)
    const d=await (await fetch('/api/visualize',{method:'POST',body:fd})).json()
-   if(d.mode==='ai'&&typeof d.image==='string')setGens(g=>({...g,[k]:d.image}));else if(d.mode==='off')setOff(true);else throw new Error(String(d.code||d.status||'error'))}
+   if(d.mode==='ai'&&typeof d.image==='string')setGens(g=>({...g,[k]:d.image}));else if(d.mode==='off')setOff(true);else throw new Error([d.code||d.status||'error',d.param?'param: '+d.param:'',d.message||''].filter(Boolean).join(' · '))}
   catch(err){setErrs(x=>({...x,[k]:err instanceof Error?err.message:'error'}));setUsed(u=>u.filter(y=>y!==k))}
   setBusy(false)}
  useEffect(()=>{if(!hasMat||busy||off||gens[key]||errs[key])return;if(!used.includes(key)){if(left<=0)return;setUsed(u=>[...u,key])};gen(key,style,tid)},[key,busy,off]) // one generation per style+tier combination
